@@ -1,0 +1,30 @@
+{
+  "name": "simple-node-log",
+  "version": "1.0.0",
+  "description": "Create a Simple logger using nodejs file stream",
+  "main": "logger.js",
+  "scripts": {
+      "start": "node example/app"
+  },
+  "keywords": [
+      "log",
+      "logger",
+      "nodejs",
+      "logging",
+      "fs logger",
+      "node logger",
+      "simple logger",
+      "simple log",
+      "node log"
+  ],
+  "author": "ranjithm",
+  "license": "MIT",
+  "repository": {
+      "type": "git",
+      "url": "git+https://github.com/ranvithm/simple-node-log.git"
+  },
+  "bugs": {
+      "url": "https://github.com/ranvithm/simple-node-log/issues"
+  },
+  "homepage": "https://github.com/ranvithm/simple-node-log#readme"
+}
