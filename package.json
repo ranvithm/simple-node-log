@@ -1,6 +1,6 @@
 {
   "name": "simple-node-log",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Create a Simple logger using nodejs file stream",
   "main": "logger.js",
   "scripts": {

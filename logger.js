@@ -22,7 +22,7 @@ class Logger {
 
     getCurrDate() {
         let cDate = new Date()
-        return cDate.getFullYear() + "-" + (cDate.getMonth() + 1) + "-" + cDate.getDate()
+        return `${cDate.getFullYear()}-${(cDate.getMonth() + 1)}-${cDate.getDate()}`
     }
 
     getFilePath() {
@@ -59,12 +59,12 @@ class Logger {
 
     addingHeader(data) {
         if (this.header) this.appendLog(this.header)
-        this.appendLog(data)
+            this.appendLog(data)
     }
     
     appendLog(data) {
         try {
-            if (!this.writeStream)
+            if (!this.writeStream) 
                 this.writeStream = createWriteStream(this.fileName, { 'flags': 'a' })
             if (typeof data === 'object') {
                 let writeDate = Array.isArray(data) ? data : Object.values(data)
@@ -84,10 +84,12 @@ class Logger {
         if (getDate === this.date) {
             this.appendLog(arguments)
         } else {
+            if (this.writeStream) {
+                this.writeStream.close()
+                this.writeStream = null
+            }
             this.date = this.getCurrDate()
             this.fileName = this.getFilePath()
-            if (this.writeStream)
-                this.writeStream.close()
             this.writeLog(arguments)
         }
     }
