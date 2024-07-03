@@ -1,98 +1,117 @@
-const { mkdir, writeFileSync, createWriteStream, readFile, accessSync, constants: { F_OK, W_OK } } = require("fs")
+const { mkdirSync, createWriteStream, accessSync, constants: { F_OK } } = require("fs");
+const path = require("path");
 
 class Logger {
-    constructor(dir = '', prefix = 'logger', ext = 'log', header = "") {
-        this.parentDir = dir
-        this.prefixName = prefix
-        this.extension = ext
-        this.date = null
-        this.header = header
-        this.fileName = null
-        this.writeStream = null
-        this.init = () => {
-            if (this.parentDir)
-                if (!this.checkFileExists(this.parentDir))
-                    mkdir(this.parentDir, { recursive: !0 }, (err) => {
-                        if (err) console.info('Files created successfully')
-                        else console.error(`Permission denied to create a file`)
-                    })
-        }
-        this.init()
+    constructor(options = {}) {
+        const { dir = 'logs', prefix = 'app', ext = 'log', logLevel = 'debug' } = options;
+        this.parentDir = dir;
+        this.prefixName = prefix;
+        this.extension = ext;
+        this.logLevel = logLevel;
+        this.levels = { error: 0, warn: 1, info: 2, debug: 3 };
+        this.columnWidths = {
+            timestamp: 24, 
+            level: 8,
+            message: 80 
+        };
+
+        this.init();
     }
 
-    getCurrDate() {
-        let cDate = new Date()
-        return `${cDate.getFullYear()}-${(cDate.getMonth() + 1)}-${cDate.getDate()}`
+    init() {
+        try {
+            if (!this.checkDirectoryExists(this.parentDir)) {
+                mkdirSync(this.parentDir, { recursive: true });
+                console.info(`Directory '${this.parentDir}' created successfully`);
+            }
+        } catch (err) {
+            console.error(`Error creating directory '${this.parentDir}': ${err.message}`);
+        }
+
+        this.date = this.getCurrentDateString();
+        this.fileName = this.getFilePath();
+        this.writeHeader();
+    }
+
+    getCurrentDateString() {
+        const now = new Date();
+        return now.toISOString().slice(0, 19).replace(/[-T]/g, '').replace(/:/g, '').concat('Z');
     }
 
     getFilePath() {
-        this.fileName = `${this.parentDir}/${this.prefixName + this.date}.${this.extension}`
-        return this.fileName
+        return path.join(this.parentDir, `${this.prefixName}_${this.date}.${this.extension}`);
     }
 
-    writeLog(log) {
-        var _self = this;
-        try {
-            readFile(_self.fileName, function (err, data) {
-                if (!data) {
-                    writeFileSync(_self.fileName, "");
-                    _self.addingHeader(log)
-                }else if (data.length == 0)
-                    _self.addingHeader(log)
-                else 
-                    _self.appendLog(log)
-            })
-        } catch (error) {
-            console.error(error);
-        }
+    writeHeader() {
+        const header = `${'Timestamp'.padEnd(this.columnWidths.timestamp)} ${'Level'.padEnd(this.columnWidths.level)} ${'Message'.padEnd(this.columnWidths.message)}`;
+        this.appendLog(header);
     }
 
-    checkFileExists(file) {
+    writeLog(level, message) {
+        const logMessage = this.formatMessage(level, message);
+        this.appendLog(logMessage);
+    }
+
+    checkDirectoryExists(directory) {
         try {
-            accessSync(file, F_OK);
-            return true
+            accessSync(directory, F_OK);
+            return true;
         } catch (err) {
-            console.error(err);
-            return false
+            return false;
         }
     }
 
-    addingHeader(data) {
-        if (this.header) this.appendLog(this.header)
-            this.appendLog(data)
-    }
-    
-    appendLog(data) {
+    appendLog(message) {
         try {
-            if (!this.writeStream) 
-                this.writeStream = createWriteStream(this.fileName, { 'flags': 'a' })
-            if (typeof data === 'object') {
-                let writeDate = Array.isArray(data) ? data : Object.values(data)
-                writeDate.map((d) => {
-                    this.writeStream.write(`${d}        `)
-                })
-                this.writeStream.write(`   \n`)
-            } else
-                this.writeStream.write(data + "\n")
-        } catch (error) {
-            console.error(error);
+            if (!this.writeStream) {
+                this.writeStream = createWriteStream(this.fileName, { flags: 'a' });
+            }
+            this.writeStream.write(`${message}\n`);
+        } catch (err) {
+            console.error(`Error writing to file '${this.fileName}': ${err.message}`);
         }
     }
 
-    log() {
-        let getDate = this.getCurrDate()
-        if (getDate === this.date) {
-            this.appendLog(arguments)
-        } else {
-            if (this.writeStream) {
-                this.writeStream.close()
-                this.writeStream = null
+    formatMessage(level, message) {
+        const timestamp = new Date().toISOString().padEnd(this.columnWidths.timestamp);
+        const levelStr = level.toUpperCase().padEnd(this.columnWidths.level);
+        return `${timestamp} ${levelStr} ${message.padEnd(this.columnWidths.message)}`;
+    }
+
+    log(level, ...args) {
+        if (this.levels[level] <= this.levels[this.logLevel]) {
+            const message = args.join(' ');
+            const logMessage = this.formatMessage(level, message);
+
+            const currentDate = this.getCurrentDateString();
+            if (currentDate !== this.date) {
+                if (this.writeStream) {
+                    this.writeStream.close();
+                    this.writeStream = null;
+                }
+                this.date = currentDate;
+                this.fileName = this.getFilePath();
+                this.writeHeader();
             }
-            this.date = this.getCurrDate()
-            this.fileName = this.getFilePath()
-            this.writeLog(arguments)
+            this.writeLog(level, message);
         }
+    }
+
+    error(...args) {
+        this.log('error', ...args);
+    }
+
+    warn(...args) {
+        this.log('warn', ...args);
+    }
+
+    info(...args) {
+        this.log('info', ...args);
+    }
+
+    debug(...args) {
+        this.log('debug', ...args);
     }
 }
 
-module.exports = Logger
+module.exports = Logger;

@@ -1,4 +1,15 @@
-const Logger = require("../logger")
+const Logger = require('simple-node-log');
 
-var logger = new Logger('logs', 'infoxd_', 'txt', ["Column 1", "Column 2", "Column 3", "Column 4", "Column 5"])
-logger.log('row1    ', "row1    ", 'row1    ', 'row1    ', 'row1    ')
+// Initialize logger with options
+const logger = new Logger({
+    dir: 'logs',        // Log directory
+    prefix: 'app',      // Log filename prefix
+    ext: 'log',         // Log filename extension
+    logLevel: 'debug'   // Log level (error, warn, info, debug)
+});
+
+// Log messages
+logger.info('This is an info message');
+logger.warn('This is a warning message');
+logger.error('This is an error message');
+logger.debug('This is a debug message');
